@@ -359,6 +359,7 @@ public class DBR extends Activity implements Camera.PreviewCallback {
             PublicRuntimeSettings settings;
             try {
                 settings = mBarcodeReader.getRuntimeSettings();
+                
                 settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE | EnumBarcodeFormat_2.BF2_DOTCODE;
                 mBarcodeReader.updateRuntimeSettings(settings);
             } catch (Exception e) {
