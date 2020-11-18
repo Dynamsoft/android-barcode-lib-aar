@@ -3,7 +3,6 @@
     package="com.dynamsoft.demo.dynamsoftbarcodereaderdemo"
           xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk android:minSdkVersion="19" tools:overrideLibrary="com.dynamsoft.barcode"/>
     <application android:allowBackup="true"
                  android:label="@string/app_name">
     </application>

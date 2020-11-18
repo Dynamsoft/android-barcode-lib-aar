@@ -14,7 +14,7 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.TextView;
 
-import com.dynamsoft.barcode.TextResult;
+import com.dynamsoft.dbr.TextResult;
 
 public class CustomDialog extends Dialog {
 
