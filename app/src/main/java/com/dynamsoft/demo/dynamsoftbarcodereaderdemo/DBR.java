@@ -22,14 +22,14 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.dynamsoft.barcode.BarcodeReader;
-import com.dynamsoft.barcode.BarcodeReaderException;
-import com.dynamsoft.barcode.EnumBarcodeFormat;
-import com.dynamsoft.barcode.EnumBarcodeFormat_2;
-import com.dynamsoft.barcode.EnumImagePixelFormat;
-import com.dynamsoft.barcode.PublicRuntimeSettings;
-import com.dynamsoft.barcode.TextResult;
-import com.dynamsoft.barcode.DBRServerLicenseVerificationListener;
+import com.dynamsoft.dbr.BarcodeReader;
+import com.dynamsoft.dbr.BarcodeReaderException;
+import com.dynamsoft.dbr.EnumBarcodeFormat;
+import com.dynamsoft.dbr.EnumBarcodeFormat_2;
+import com.dynamsoft.dbr.EnumImagePixelFormat;
+import com.dynamsoft.dbr.PublicRuntimeSettings;
+import com.dynamsoft.dbr.TextResult;
+import com.dynamsoft.dbr.DBRServerLicenseVerificationListener;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -301,7 +301,7 @@ public class DBR extends Activity implements Camera.PreviewCallback {
                         });
                         int y = Integer.MIN_VALUE;
                         //rotate cornerPoints by 90, NewLeft = H - Ymax, NewTop = Left, NewWidth = Height, NewHeight = Width
-                        for (com.dynamsoft.barcode.Point vertex : barcode.localizationResult.resultPoints) {
+                        for (com.dynamsoft.dbr.Point vertex : barcode.localizationResult.resultPoints) {
                             if (y < vertex.y) {
                                 y = vertex.y;
                             }
@@ -359,7 +359,8 @@ public class DBR extends Activity implements Camera.PreviewCallback {
             PublicRuntimeSettings settings;
             try {
                 settings = mBarcodeReader.getRuntimeSettings();
-                settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE;
+                
+                settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE | EnumBarcodeFormat_2.BF2_DOTCODE;
                 mBarcodeReader.updateRuntimeSettings(settings);
             } catch (Exception e) {
                 e.printStackTrace();
