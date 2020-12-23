@@ -24,6 +24,9 @@ import android.widget.TextView;
 
 import com.dynamsoft.dbr.BarcodeReader;
 import com.dynamsoft.dbr.BarcodeReaderException;
+import com.dynamsoft.dbr.DBRLTSLicenseVerificationListener;
+import com.dynamsoft.dbr.DMLTSConnectionParameters;
+import com.dynamsoft.dbr.EnumDMUUIDGenerationMethod;
 import com.dynamsoft.dbr.EnumBarcodeFormat;
 import com.dynamsoft.dbr.EnumBarcodeFormat_2;
 import com.dynamsoft.dbr.EnumImagePixelFormat;
@@ -61,28 +64,65 @@ public class DBR extends Activity implements Camera.PreviewCallback {
             }
         }
         mPreview = findViewById(R.id.camera_preview);
-        mStrLicense = getIntent().getStringExtra("barcodeLicense");
-        Log.i("mStrLicense", mStrLicense);
-	      try {
+	    try {
             mBarcodeReader = new BarcodeReader();
         } catch (BarcodeReaderException e) {
             e.printStackTrace();
         }
         try {
-            mBarcodeReader.initLicense(mStrLicense);
-            String strLicenseKey = getIntent().getStringExtra("barcodeLicenseKey");
-            Log.i("strLicenseKey", strLicenseKey);
-            if(strLicenseKey !=null){
-                mBarcodeReader.initLicenseFromServer("",strLicenseKey, new DBRServerLicenseVerificationListener() {
-                    @Override
-                    public void licenseVerificationCallback(boolean isSuccess, Exception error) {
-                        if (!isSuccess) {
-                            Log.e("DBR", "DBR license verify failed due to " + error.getMessage());
+            mStrLicense = getIntent().getStringExtra("barcodeLicense");
+            if (mStrLicense != null && !"".equals(mStrLicense)) {
+                mBarcodeReader.initLicense(mStrLicense);
+            } else {
+                String strLicenseKey = getIntent().getStringExtra("barcodeLicenseKey");
+                if (strLicenseKey != null && !"".equals(strLicenseKey)) {
+                    mBarcodeReader.initLicenseFromServer("", strLicenseKey, new DBRServerLicenseVerificationListener() {
+                        @Override
+                        public void licenseVerificationCallback(boolean isSuccess, Exception error) {
+                            if (!isSuccess) {
+                                Log.e("DBR", "DBR license verify failed due to " + error.getMessage());
+                            }
                         }
+                    });
+                } else {
+                    String handshakeCode = getIntent().getStringExtra("handshakeCode");
+                    if (handshakeCode != null && !"".equals(handshakeCode)) {
+                        String mainServerURL = getIntent().getStringExtra("mainServerURL");
+                        String standbyServerURL = getIntent().getStringExtra("standbyServerURL");
+                        String sessionPassword = getIntent().getStringExtra("sessionPassword");
+                        int uuidGenerationMethod = getIntent().getIntExtra("uuidGenerationMethod", EnumDMUUIDGenerationMethod.DM_UUIDGM_RANDOM);
+                        //1 for DM_UUIDGM_RANDOM; 2 for DM_UUIDGM_HARDWARE
+                        int maxBufferDays = getIntent().getIntExtra("maxBufferDays", 0);
+                        int chargeWay = getIntent().getIntExtra("chargeWay", 0);
+                        String strLimitedLicenseModules = getIntent().getStringExtra("limitedLicenseModules");
+                        strLimitedLicenseModules = strLimitedLicenseModules.substring(1, strLimitedLicenseModules.length() - 1);
+                        String[] modules = strLimitedLicenseModules.split(",");
+                        List<Integer> limitedLicenseModules = new ArrayList<>();
+                        for (String str : modules) {
+                            limitedLicenseModules.add(Integer.parseInt(str));
+                        }
+                        DMLTSConnectionParameters parameters = new DMLTSConnectionParameters();
+                        parameters.handshakeCode = handshakeCode;
+                        parameters.mainServerURL = mainServerURL;
+                        parameters.standbyServerURL = standbyServerURL;
+                        parameters.sessionPassword = sessionPassword;
+                        parameters.uuidGenerationMethod = uuidGenerationMethod;
+                        parameters.maxBufferDays = maxBufferDays;
+                        parameters.chargeWay = chargeWay;
+                        parameters.limitedLicenseModules = limitedLicenseModules;
+                        mBarcodeReader.initLicenseFromLTS(parameters, new DBRLTSLicenseVerificationListener() {
+                            @Override
+                            public void LTSLicenseVerificationCallback(boolean isSuccess, Exception error) {
+                                if (!isSuccess) {
+                                    Log.e("DBR", "DBR lts license verify failed due to " + error.getMessage());
+                                }
+                            }
+                        });
                     }
-                });
+                }
             }
-        }catch (Exception e){
+        } catch (Exception e){
+            Log.e("DBR", e.getMessage());
             e.printStackTrace();
         }
         mFlashImageView = findViewById(R.id.ivFlash);
