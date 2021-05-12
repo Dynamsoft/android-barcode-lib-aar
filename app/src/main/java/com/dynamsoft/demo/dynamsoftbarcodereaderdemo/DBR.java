@@ -34,10 +34,15 @@ import com.dynamsoft.dbr.PublicRuntimeSettings;
 import com.dynamsoft.dbr.TextResult;
 import com.dynamsoft.dbr.DBRServerLicenseVerificationListener;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -71,6 +76,7 @@ public class DBR extends Activity implements Camera.PreviewCallback {
         }
         try {
             mStrLicense = getIntent().getStringExtra("barcodeLicense");
+            int exCount = getIntent().getIntExtra("expectedBarcodesCount",0);
             if (mStrLicense != null && !"".equals(mStrLicense)) {
                 mBarcodeReader.initLicense(mStrLicense);
             } else {
@@ -86,40 +92,48 @@ public class DBR extends Activity implements Camera.PreviewCallback {
                     });
                 } else {
                     String handshakeCode = getIntent().getStringExtra("handshakeCode");
-                    if (handshakeCode != null && !"".equals(handshakeCode)) {
-                        String mainServerURL = getIntent().getStringExtra("mainServerURL");
-                        String standbyServerURL = getIntent().getStringExtra("standbyServerURL");
-                        String sessionPassword = getIntent().getStringExtra("sessionPassword");
-                        int uuidGenerationMethod = getIntent().getIntExtra("uuidGenerationMethod", EnumDMUUIDGenerationMethod.DM_UUIDGM_RANDOM);
-                        //1 for DM_UUIDGM_RANDOM; 2 for DM_UUIDGM_HARDWARE
-                        int maxBufferDays = getIntent().getIntExtra("maxBufferDays", 0);
-                        int chargeWay = getIntent().getIntExtra("chargeWay", 0);
-                        String strLimitedLicenseModules = getIntent().getStringExtra("limitedLicenseModules");
-                        strLimitedLicenseModules = strLimitedLicenseModules.substring(1, strLimitedLicenseModules.length() - 1);
-                        String[] modules = strLimitedLicenseModules.split(",");
-                        List<Integer> limitedLicenseModules = new ArrayList<>();
-                        for (String str : modules) {
-                            limitedLicenseModules.add(Integer.parseInt(str));
-                        }
-                        DMLTSConnectionParameters parameters = new DMLTSConnectionParameters();
-                        parameters.handshakeCode = handshakeCode;
-                        parameters.mainServerURL = mainServerURL;
-                        parameters.standbyServerURL = standbyServerURL;
-                        parameters.sessionPassword = sessionPassword;
-                        parameters.uuidGenerationMethod = uuidGenerationMethod;
-                        parameters.maxBufferDays = maxBufferDays;
-                        parameters.chargeWay = chargeWay;
-                        parameters.limitedLicenseModules = limitedLicenseModules;
-                        mBarcodeReader.initLicenseFromLTS(parameters, new DBRLTSLicenseVerificationListener() {
-                            @Override
-                            public void LTSLicenseVerificationCallback(boolean isSuccess, Exception error) {
-                                if (!isSuccess) {
-                                    Log.e("DBR", "DBR lts license verify failed due to " + error.getMessage());
-                                }
-                            }
-                        });
+                    String organizationID = getIntent().getStringExtra("organizationID");
+                    String mainServerURL = getIntent().getStringExtra("mainServerURL");
+                    String standbyServerURL = getIntent().getStringExtra("standbyServerURL");
+                    String sessionPassword = getIntent().getStringExtra("sessionPassword");
+                    int uuidGenerationMethod = getIntent().getIntExtra("uuidGenerationMethod", EnumDMUUIDGenerationMethod.DM_UUIDGM_RANDOM);
+                    //1 for DM_UUIDGM_RANDOM; 2 for DM_UUIDGM_HARDWARE
+                    int maxBufferDays = getIntent().getIntExtra("maxBufferDays", 0);
+                    int chargeWay = getIntent().getIntExtra("chargeWay", 0);
+                    String strLimitedLicenseModules = getIntent().getStringExtra("limitedLicenseModules");
+                    strLimitedLicenseModules = strLimitedLicenseModules.substring(1, strLimitedLicenseModules.length() - 1);
+                    String[] modules = strLimitedLicenseModules.split(",");
+                    List<Integer> limitedLicenseModules = new ArrayList<>();
+                    for (String str : modules) {
+                        limitedLicenseModules.add(Integer.parseInt(str));
                     }
+                    DMLTSConnectionParameters parameters = new DMLTSConnectionParameters();
+                    parameters.handshakeCode = handshakeCode;
+                    parameters.organizationID = organizationID;
+                    parameters.mainServerURL = mainServerURL;
+                    parameters.standbyServerURL = standbyServerURL;
+                    parameters.sessionPassword = sessionPassword;
+                    parameters.uuidGenerationMethod = uuidGenerationMethod;
+                    parameters.maxBufferDays = maxBufferDays;
+                    parameters.chargeWay = chargeWay;
+                    parameters.limitedLicenseModules = limitedLicenseModules;
+                    mBarcodeReader.initLicenseFromLTS(parameters, new DBRLTSLicenseVerificationListener() {
+                        @Override
+                        public void LTSLicenseVerificationCallback(boolean isSuccess, Exception error) {
+                            if (!isSuccess) {
+                                Log.e("DBR", "DBR lts license verify failed due to " + error.getMessage());
+                            }
+                        }
+                    });
                 }
+            }
+            try {
+                PublicRuntimeSettings settings = mBarcodeReader.getRuntimeSettings();
+                settings.expectedBarcodesCount = exCount;
+                settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE | EnumBarcodeFormat_2.BF2_DOTCODE;
+                mBarcodeReader.updateRuntimeSettings(settings);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         } catch (Exception e){
             Log.e("DBR", e.getMessage());
@@ -313,16 +327,30 @@ public class DBR extends Activity implements Camera.PreviewCallback {
                     if (result != null && result.length>0) {
                         TextResult barcode = result[0];
                         String msgText = "";
+                        String msgFormat = "";
+
+                        JSONArray jsonArray = new JSONArray();
                         for(int i = 0; i<result.length ;i++){
+                            msgText = result[i].barcodeText;
                             if (result[i].barcodeFormat_2 != 0){
-                                msgText = msgText + "\nResult: " + result[i].barcodeText + "\nFormat: "+ result[i].barcodeFormatString_2 + "\n";
+                                msgFormat = result[i].barcodeFormatString_2;
+                                //msgText = msgText + "\nResult: " + result[i].barcodeText + "\nFormat: "+ result[i].barcodeFormatString_2 + "\n";
                             }else {
-                                msgText = msgText + "\nResult: " + result[i].barcodeText + "\nFormat: "+ result[i].barcodeFormatString + "\n";
+                                msgFormat = result[i].barcodeFormatString;
+                                //msgText = msgText + "\nResult: " + result[i].barcodeText + "\nFormat: "+ result[i].barcodeFormatString + "\n";
+                            }
+                            try {
+                                JSONObject jsonObject = new JSONObject();
+                                jsonObject.put("Result", msgText);
+                                jsonObject.put("Format", msgFormat);
+                                jsonArray.put(i, jsonObject);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
                         }
                         if (mIsIntent) {
                             Intent data = new Intent();
-                            data.putExtra("SCAN_RESULT", msgText);
+                            data.putExtra("SCAN_RESULT", jsonArray.toString());
                             data.putExtra("SCAN_RESULT_FORMAT", "");
                             data.putExtra("FROMJS", mStrLicense);
                             DBR.this.setResult(DBR.RESULT_OK, data);
@@ -396,15 +424,6 @@ public class DBR extends Activity implements Camera.PreviewCallback {
             //mStartTime = SystemClock.currentThreadTimeMillis();
             mStartTime = new Date().getTime();
             Camera.Size size = camera.getParameters().getPreviewSize();
-            PublicRuntimeSettings settings;
-            try {
-                settings = mBarcodeReader.getRuntimeSettings();
-                
-                settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE | EnumBarcodeFormat_2.BF2_DOTCODE;
-                mBarcodeReader.updateRuntimeSettings(settings);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
             try {
                 TextResult[] readResult = mBarcodeReader.decodeBuffer(data, size.width, size.height, size.width, EnumImagePixelFormat.IPF_NV21, "");
                 Message message = handler.obtainMessage(READ_RESULT, readResult);
