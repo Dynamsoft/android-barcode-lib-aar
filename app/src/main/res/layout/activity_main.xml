@@ -21,13 +21,14 @@
             android:src="@mipmap/help"
             android:onClick="showAbout"
             android:paddingLeft="@dimen/activity_horizontal_margin"
-            android:paddingRight="@dimen/activity_horizontal_margin"
+            android:visibility="gone"
             android:layout_gravity="left|center_vertical"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title"
+            android:visibility="gone"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:id="@+id/textView" />
     </LinearLayout>
@@ -102,6 +103,7 @@
                     android:layout_gravity="center"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:clickable="true"
+                    android:visibility="gone"
                     android:text="@string/flash_off"
                     android:onClick="setFlash"
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"
