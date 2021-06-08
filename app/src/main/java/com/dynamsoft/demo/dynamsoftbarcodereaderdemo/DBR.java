@@ -31,6 +31,7 @@ import com.dynamsoft.dbr.EnumBarcodeFormat;
 import com.dynamsoft.dbr.EnumBarcodeFormat_2;
 import com.dynamsoft.dbr.EnumImagePixelFormat;
 import com.dynamsoft.dbr.PublicRuntimeSettings;
+import com.dynamsoft.dbr.RegionDefinition;
 import com.dynamsoft.dbr.TextResult;
 import com.dynamsoft.dbr.DBRServerLicenseVerificationListener;
 
@@ -77,6 +78,11 @@ public class DBR extends Activity implements Camera.PreviewCallback {
         try {
             mStrLicense = getIntent().getStringExtra("barcodeLicense");
             int exCount = getIntent().getIntExtra("expectedBarcodesCount",0);
+            int regionTop = getIntent().getIntExtra("regionTop",0);
+            int regionLeft = getIntent().getIntExtra("regionLeft",0);
+            int regionRight = getIntent().getIntExtra("regionRight",0);
+            int regionBottom = getIntent().getIntExtra("regionBottom",0);
+            int regionMeasuredByPercentage = getIntent().getIntExtra("regionMeasuredByPercentage",0);
             if (mStrLicense != null && !"".equals(mStrLicense)) {
                 mBarcodeReader.initLicense(mStrLicense);
             } else {
@@ -128,9 +134,16 @@ public class DBR extends Activity implements Camera.PreviewCallback {
                 }
             }
             try {
+                RegionDefinition region = new RegionDefinition();
+                region.regionLeft = regionTop;
+                region.regionTop = regionLeft;
+                region.regionRight = regionBottom;
+                region.regionBottom = regionRight;
+                region.regionMeasuredByPercentage = regionMeasuredByPercentage;
                 PublicRuntimeSettings settings = mBarcodeReader.getRuntimeSettings();
                 settings.expectedBarcodesCount = exCount;
                 settings.barcodeFormatIds_2 = EnumBarcodeFormat_2.BF2_POSTALCODE | EnumBarcodeFormat_2.BF2_NONSTANDARD_BARCODE | EnumBarcodeFormat_2.BF2_DOTCODE;
+                settings.region = region;
                 mBarcodeReader.updateRuntimeSettings(settings);
             } catch (Exception e) {
                 e.printStackTrace();
